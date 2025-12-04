@@ -1,0 +1,3478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>EverNet Support Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* ========== CSS VARIABLES ========== */
+    :root {
+      --navy: #001f3f;
+      --dark-navy: #00152c;
+      --gold: #d4af37;
+      --light-gold: #e6d4a8;
+      --white: #ffffff;
+      --light: #f8fafc;
+      --shadow: rgba(0, 31, 63, 0.1);
+      --gradient: linear-gradient(135deg, var(--navy) 0%, #0a2458 100%);
+      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      --hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+      --success: #28a745;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --support: #007bff;
+      --creator: #8B5CF6;
+      --info: #17a2b8;
+      --bg-color: #f8fafc;
+      --text-color: #001f3f;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --online: #00c851;
+      --offline: #ff3547;
+      --away: #ff8800;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-size: 13px;
+    }
+
+    /* ========== NOTIFICATION ========== */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 24px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 500;
+      z-index: 10000;
+      transform: translateX(150%);
+      transition: transform 0.3s ease;
+      max-width: 350px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      background: linear-gradient(135deg, var(--success), #20c997);
+    }
+
+    .notification.error {
+      background: linear-gradient(135deg, var(--danger), #e83e8c);
+    }
+
+    .notification.info {
+      background: linear-gradient(135deg, var(--info), #6f42c1);
+    }
+
+    .notification.warning {
+      background: linear-gradient(135deg, var(--warning), #ff6b6b);
+    }
+
+    /* ========== LOADING ========== */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      backdrop-filter: blur(3px);
+    }
+
+    .loading-spinner {
+      border: 3px solid #f1f5f9;
+      border-top: 3px solid var(--support);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ========== SUPPORT PORTAL ========== */
+    .support-portal {
+      display: flex;
+      min-height: 100vh;
+      flex-direction: column;
+    }
+
+    /* ========== RESPONSIVE HEADER ========== */
+    .support-header {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+      padding: 15px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 70px;
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .support-brand {
+      font-family: "Montserrat", sans-serif;
+      font-size: 1.5em;
+      font-weight: 900;
+      color: var(--navy);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--support) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      white-space: nowrap;
+    }
+
+    .support-nav {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .online-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(0, 123, 255, 0.1);
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--online);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.offline {
+      background: var(--offline);
+      animation: none;
+    }
+
+    .status-dot.away {
+      background: var(--away);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 12px;
+      border-left: 1px solid var(--border-color);
+    }
+
+    .user-email {
+      font-size: 0.8em;
+      color: var(--navy);
+      background: rgba(0, 123, 255, 0.1);
+      padding: 6px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 160px;
+      font-weight: 500;
+    }
+
+    .logout-btn {
+      background: linear-gradient(135deg, var(--support) 0%, #0056b3 100%);
+      color: var(--white);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8em;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .logout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+    }
+
+    /* ========== RESPONSIVE NAVIGATION ========== */
+    .support-nav-links {
+      display: flex;
+      gap: 2px;
+      background: var(--light);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .support-nav-links::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .support-nav-links::-webkit-scrollbar-track {
+      background: var(--light);
+    }
+
+    .support-nav-links::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 2px;
+    }
+
+    .nav-link {
+      padding: 15px 20px;
+      text-decoration: none;
+      color: var(--navy);
+      font-weight: 500;
+      font-size: 0.9em;
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      flex-shrink: 0;
+    }
+
+    .nav-link:hover {
+      color: var(--support);
+      background: rgba(0, 123, 255, 0.05);
+    }
+
+    .nav-link.active {
+      color: var(--support);
+      border-bottom: 3px solid var(--support);
+      background: rgba(0, 123, 255, 0.05);
+    }
+
+    .nav-badge {
+      background: var(--support);
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.75em;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    /* ========== RESPONSIVE MAIN CONTENT ========== */
+    .support-main {
+      flex: 1;
+      padding: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .page-content {
+      display: none;
+    }
+
+    .page-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ========== DASHBOARD ========== */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .dashboard-title {
+      font-family: "Montserrat", sans-serif;
+      font-size: 1.8em;
+      color: var(--navy);
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .greeting {
+      font-size: 1em;
+      color: var(--support);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.4s ease;
+      cursor: pointer;
+      border: none;
+      font-size: 0.9em;
+      text-align: center;
+      min-width: 120px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--support) 0%, #0056b3 100%);
+      color: var(--white);
+      box-shadow: 0 8px 30px rgba(0, 123, 255, 0.2);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #218838 100%);
+      color: white;
+      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #c82333 100%);
+      color: white;
+      box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #e0a800 100%);
+      color: var(--navy);
+      box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+    }
+
+    .btn-outline {
+      border: 2px solid var(--navy);
+      color: var(--navy);
+      background: transparent;
+    }
+
+    .btn-outline:hover {
+      background: var(--navy);
+      color: var(--white);
+      transform: translateY(-2px);
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 0.8em;
+      min-width: auto;
+    }
+
+    /* ========== RESPONSIVE STATS GRID ========== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      transition: all 0.4s ease;
+      border: 1px solid var(--border-color);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      min-height: 100px;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--hover-shadow);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--support), var(--navy));
+    }
+
+    .stat-value {
+      font-size: 1.8em;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.85em;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    /* ========== TICKET LIST ========== */
+    .tickets-container {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 1.3em;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .search-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.9em;
+      min-width: 200px;
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+
+    .filter-select {
+      padding: 10px 14px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.9em;
+      background: var(--card-bg);
+      color: var(--text-color);
+      min-width: 150px;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      width: 100%;
+      max-height: 60vh;
+      overflow-y: auto;
+      position: relative;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+      font-size: 0.85em;
+    }
+
+    th {
+      background: var(--light);
+      font-weight: 600;
+      color: var(--navy);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      font-size: 0.9em;
+    }
+
+    tr:hover {
+      background: rgba(0, 123, 255, 0.02);
+    }
+
+    /* Status Badges */
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 16px;
+      font-size: 0.75em;
+      font-weight: 600;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .status-open {
+      background: rgba(0, 123, 255, 0.1);
+      color: var(--support);
+    }
+
+    .status-in-progress {
+      background: rgba(255, 193, 7, 0.1);
+      color: var(--warning);
+    }
+
+    .status-resolved {
+      background: rgba(40, 167, 69, 0.1);
+      color: var(--success);
+    }
+
+    .status-closed {
+      background: rgba(108, 117, 125, 0.1);
+      color: #6c757d;
+    }
+
+    .priority-badge {
+      padding: 4px 8px;
+      border-radius: 16px;
+      font-size: 0.75em;
+      font-weight: 600;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .priority-low {
+      background: rgba(40, 167, 69, 0.1);
+      color: var(--success);
+    }
+
+    .priority-medium {
+      background: rgba(255, 193, 7, 0.1);
+      color: var(--warning);
+    }
+
+    .priority-high {
+      background: rgba(253, 126, 20, 0.1);
+      color: #fd7e14;
+    }
+
+    .priority-urgent {
+      background: rgba(220, 53, 69, 0.1);
+      color: var(--danger);
+    }
+
+    /* ========== RESPONSIVE TICKET CHAT ========== */
+    .ticket-chat-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 200px);
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .ticket-header {
+      padding: 15px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--light);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ticket-title {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .ticket-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.85em;
+      color: #64748b;
+    }
+
+    .ticket-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 200px;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      position: relative;
+      animation: slideIn 0.3s ease;
+      word-break: break-word;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.support {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--support), #0056b3);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.creator {
+      align-self: flex-start;
+      background: var(--light);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.system {
+      align-self: center;
+      background: linear-gradient(135deg, #ffc107, #ff9800);
+      color: white;
+      max-width: 90%;
+      text-align: center;
+      font-size: 0.85em;
+      padding: 8px 16px;
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      font-size: 0.85em;
+      opacity: 0.8;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .message-content {
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-line;
+    }
+
+    .message-time {
+      font-size: 0.75em;
+      opacity: 0.7;
+      margin-top: 5px;
+      text-align: right;
+    }
+
+    .attachments {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .attachment {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      font-size: 0.85em;
+      text-decoration: none;
+      color: inherit;
+      max-width: 100%;
+      word-break: break-all;
+    }
+
+    .chat-input-area {
+      padding: 15px;
+      border-top: 1px solid var(--border-color);
+      background: var(--light);
+      display: none;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      font-size: 0.95em;
+      resize: none;
+      min-height: 60px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      min-width: 200px;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: var(--support);
+    }
+
+    .file-upload-btn {
+      background: transparent;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0 16px;
+      cursor: pointer;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+      height: 44px;
+      flex-shrink: 0;
+    }
+
+    .file-upload-btn:hover {
+      border-color: var(--support);
+      color: var(--support);
+    }
+
+    /* ========== USERS PAGE ========== */
+    .users-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .user-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+    }
+
+    .user-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--hover-shadow);
+    }
+
+    .user-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--creator), var(--support));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.2em;
+      flex-shrink: 0;
+    }
+
+    .user-info-compact h4 {
+      font-size: 1.1em;
+      margin-bottom: 4px;
+      color: var(--navy);
+      word-break: break-word;
+    }
+
+    .user-info-compact p {
+      font-size: 0.85em;
+      color: #64748b;
+      word-break: break-word;
+    }
+
+    /* ========== RESPONSIVE FOOTER ========== */
+    .support-footer {
+      background: var(--navy);
+      color: var(--white);
+      padding: 15px 20px;
+      margin-top: auto;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .footer-copyright {
+      font-size: 0.85em;
+      opacity: 0.8;
+    }
+
+    .support-email-link {
+      color: var(--light-gold);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85em;
+      word-break: break-all;
+    }
+
+    .support-email-link:hover {
+      color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    /* ========== MODAL ========== */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      position: relative;
+      animation: modalSlideIn 0.3s ease;
+      margin: auto;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .modal-title {
+      font-size: 1.3em;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.3em;
+      cursor: pointer;
+      color: #64748b;
+      transition: color 0.3s ease;
+    }
+
+    .close-modal:hover {
+      color: var(--navy);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* ========== SETTINGS PAGE ========== */
+    .settings-container {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .settings-section {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .settings-title {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: var(--navy);
+      font-size: 0.9em;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.9em;
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--support);
+    }
+    
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .time-inputs {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .checkbox-label {
+      font-size: 0.9em;
+      color: var(--text-color);
+    }
+    
+    .test-email-btn {
+      margin-top: 10px;
+      background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+      color: white;
+    }
+    
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      font-weight: 500;
+      margin-left: 10px;
+    }
+    
+    .status-active {
+      background: rgba(40, 167, 69, 0.1);
+      color: var(--success);
+    }
+    
+    .status-inactive {
+      background: rgba(220, 53, 69, 0.1);
+      color: var(--danger);
+    }
+    
+    .settings-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .alert-banner {
+      background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+      border-left: 4px solid var(--warning);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      font-size: 0.9em;
+    }
+    
+    .alert-banner.warning {
+      background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+      border-left-color: var(--warning);
+    }
+    
+    .alert-banner.info {
+      background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+      border-left-color: var(--info);
+    }
+    
+    .message-template {
+      background: rgba(0, 123, 255, 0.05);
+      border: 1px solid rgba(0, 123, 255, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 0.85em;
+      line-height: 1.5;
+    }
+    
+    .message-template .template-title {
+      font-weight: 600;
+      color: var(--support);
+      margin-bottom: 5px;
+    }
+    
+    .template-variables {
+      margin-top: 10px;
+      font-size: 0.8em;
+      color: #64748b;
+    }
+    
+    .variable {
+      display: inline-block;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+      font-family: monospace;
+    }
+
+    /* ========== MOBILE RESPONSIVE STYLES ========== */
+    @media (max-width: 768px) {
+      .support-header {
+        padding: 10px 15px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      
+      .support-brand {
+        font-size: 1.2em;
+        text-align: center;
+      }
+      
+      .support-nav {
+        justify-content: center;
+        gap: 10px;
+      }
+      
+      .user-info {
+        border-left: none;
+        padding-left: 0;
+        justify-content: center;
+      }
+      
+      .user-email {
+        max-width: 120px;
+      }
+      
+      .support-nav-links {
+        padding: 0 10px;
+      }
+      
+      .nav-link {
+        padding: 12px 10px;
+        font-size: 0.8em;
+      }
+      
+      .support-main {
+        padding: 15px;
+      }
+      
+      .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .dashboard-title {
+        font-size: 1.5em;
+      }
+      
+      .quick-actions {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .btn {
+        min-width: 100px;
+        padding: 8px 15px;
+        font-size: 0.85em;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      
+      .stat-card {
+        padding: 15px;
+      }
+      
+      .stat-value {
+        font-size: 1.6em;
+      }
+      
+      .search-container {
+        flex-direction: column;
+      }
+      
+      .search-input, .filter-select {
+        width: 100%;
+        min-width: auto;
+      }
+      
+      .table-container {
+        max-height: 50vh;
+      }
+      
+      th, td {
+        padding: 8px 12px;
+        font-size: 0.8em;
+      }
+      
+      .ticket-chat-container {
+        height: calc(100vh - 180px);
+      }
+      
+      .message {
+        max-width: 90%;
+      }
+      
+      .chat-input-row {
+        flex-direction: column;
+      }
+      
+      .chat-input {
+        min-height: 50px;
+      }
+      
+      .file-upload-btn {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .users-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .user-card {
+        padding: 12px;
+      }
+      
+      .modal-content {
+        padding: 15px;
+        margin: 10px;
+      }
+      
+      .footer-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+      
+      .time-inputs {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .time-inputs input {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .support-nav-links {
+        padding: 0 5px;
+      }
+      
+      .nav-link {
+        padding: 10px 8px;
+        font-size: 0.75em;
+      }
+      
+      .nav-badge {
+        padding: 1px 6px;
+        font-size: 0.7em;
+      }
+      
+      .ticket-meta {
+        font-size: 0.8em;
+      }
+      
+      .ticket-actions {
+        flex-direction: column;
+      }
+      
+      .ticket-actions .btn {
+        width: 100%;
+      }
+      
+      .modal-actions {
+        flex-direction: column;
+      }
+      
+      .modal-actions .btn {
+        width: 100%;
+      }
+    }
+
+    /* ========== CUSTOM SCROLLBAR ========== */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--light);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* ========== SIMPLE LOADING STATES ========== */
+    .loading-text {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+      font-size: 0.9em;
+    }
+    
+    .loading-dots:after {
+      content: ' .';
+      animation: dots 1.5s steps(5, end) infinite;
+    }
+    
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60% { content: '...'; }
+      80%, 100% { content: ''; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- Notification -->
+  <div id="notification" class="notification"></div>
+
+  <!-- Support Portal -->
+  <div id="supportPortal" class="support-portal">
+    <!-- Header -->
+    <header class="support-header">
+      <div class="support-brand">SUPPORT PORTAL</div>
+      <nav class="support-nav">
+        <div class="online-status" id="onlineStatusContainer">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Checking status...</span>
+        </div>
+        <div class="user-info">
+          <span class="user-email" id="userEmailDisplay">Loading...</span>
+          <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Sign Out
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="support-nav-links">
+      <button class="nav-link active" onclick="switchPage('dashboard')">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+      </button>
+      <button class="nav-link" onclick="switchPage('tickets')">
+        <i class="fas fa-ticket-alt"></i> Tickets
+        <span class="nav-badge" id="openTicketsBadge">0</span>
+      </button>
+      <button class="nav-link" onclick="switchPage('chat')">
+        <i class="fas fa-comments"></i> Live Chat
+      </button>
+      <button class="nav-link" onclick="switchPage('users')">
+        <i class="fas fa-users"></i> Users
+      </button>
+      <button class="nav-link" onclick="switchPage('settings')">
+        <i class="fas fa-cog"></i> Settings
+      </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="support-main">
+      <!-- Dashboard Page -->
+      <div id="dashboardPage" class="page-content active">
+        <div class="dashboard-header">
+          <div>
+            <h1 class="dashboard-title">Support Dashboard</h1>
+            <div class="greeting" id="greetingText">Loading...</div>
+          </div>
+          <div class="quick-actions">
+            <button class="btn btn-primary" onclick="openNewTicketModal()">
+              <i class="fas fa-plus"></i> New Ticket
+            </button>
+            <button class="btn btn-success" onclick="refreshDashboard()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card" onclick="switchPage('tickets')">
+            <div class="stat-value" id="openTickets">0</div>
+            <div class="stat-label">Open Tickets</div>
+          </div>
+          <div class="stat-card" onclick="switchPage('chat')">
+            <div class="stat-value" id="unreadMessages">0</div>
+            <div class="stat-label">Unread Messages</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="responseTime">0h</div>
+            <div class="stat-label">Avg Response Time</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="ticketsToday">0</div>
+            <div class="stat-label">New Today</div>
+          </div>
+        </div>
+
+        <!-- Recent Tickets -->
+        <div class="tickets-container">
+          <div class="section-header">
+            <h2 class="section-title">Recent Tickets</h2>
+            <button class="btn btn-outline" onclick="switchPage('tickets')">
+              <i class="fas fa-list"></i> View All Tickets
+            </button>
+          </div>
+
+          <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search tickets..." id="dashboardSearch">
+            <select class="filter-select" id="dashboardFilter">
+              <option value="all">All Status</option>
+              <option value="open">Open</option>
+              <option value="in-progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Creator</th>
+                  <th>Subject</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Last Update</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="recentTicketsTable">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 20px; color: #64748b;">
+                    <div class="loading-text">Loading tickets<span class="loading-dots"></span></div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tickets Page -->
+      <div id="ticketsPage" class="page-content">
+        <div class="dashboard-header">
+          <h1 class="dashboard-title">All Tickets</h1>
+          <div class="quick-actions">
+            <button class="btn btn-primary" onclick="openNewTicketModal()">
+              <i class="fas fa-plus"></i> New Ticket
+            </button>
+            <button class="btn btn-success" onclick="exportTickets()">
+              <i class="fas fa-download"></i> Export
+            </button>
+          </div>
+        </div>
+
+        <div class="tickets-container">
+          <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search by ticket ID, email, or subject..." id="allTicketsSearch">
+            <select class="filter-select" id="allTicketsStatus">
+              <option value="all">All Status</option>
+              <option value="open">Open</option>
+              <option value="in-progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+            <select class="filter-select" id="allTicketsPriority">
+              <option value="all">All Priority</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Creator</th>
+                  <th>Subject</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Created</th>
+                  <th>Last Update</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="allTicketsTable">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 20px; color: #64748b;">
+                    <div class="loading-text">Loading tickets<span class="loading-dots"></span></div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Page -->
+      <div id="chatPage" class="page-content">
+        <div class="dashboard-header">
+          <h1 class="dashboard-title">Ticket Chat</h1>
+          <div class="quick-actions">
+            <select class="filter-select" id="chatTicketSelect" onchange="loadSelectedTicket()">
+              <option value="">Select a ticket...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="ticket-chat-container">
+          <div class="ticket-header">
+            <div class="ticket-title" id="chatTicketTitle">No ticket selected</div>
+            <div class="ticket-meta" id="chatTicketMeta">
+              Select a ticket from the dropdown to start chatting
+            </div>
+            <div class="ticket-actions" id="ticketActions" style="display: none;">
+              <button class="btn btn-success btn-small" onclick="markAsResolved()">
+                <i class="fas fa-check-circle"></i> Mark Resolved
+              </button>
+              <button class="btn btn-danger btn-small" onclick="closeTicketChat()">
+                <i class="fas fa-times-circle"></i> Close Chat
+              </button>
+              <button class="btn btn-warning btn-small" onclick="sendEmailReply()">
+                <i class="fas fa-reply"></i> Email Reply
+              </button>
+            </div>
+          </div>
+
+          <div class="chat-messages" id="chatMessages">
+            <div style="text-align: center; padding: 40px; color: #64748b;">
+              <i class="fas fa-comments" style="font-size: 3em; margin-bottom: 15px; opacity: 0.3;"></i>
+              <p>Select a ticket to view messages</p>
+            </div>
+          </div>
+
+          <div class="chat-input-area" id="chatInputArea">
+            <div class="chat-input-row">
+              <textarea class="chat-input" id="chatInput" placeholder="Type your message..."></textarea>
+              <button class="file-upload-btn" onclick="openFileUpload()">
+                <i class="fas fa-paperclip"></i> Attach
+              </button>
+              <button class="btn btn-primary" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i> Send
+              </button>
+            </div>
+            <div style="margin-top: 10px; font-size: 0.85em; color: #64748b; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-info-circle"></i> 
+              <span>Messages are sent to creator's email automatically. Use Email Reply for custom emails.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users Page -->
+      <div id="usersPage" class="page-content">
+        <div class="dashboard-header">
+          <h1 class="dashboard-title">User Management</h1>
+          <div class="quick-actions">
+            <input type="text" class="search-input" placeholder="Search users..." id="userSearch" style="min-width: 250px;">
+            <button class="btn btn-primary" onclick="searchUsers()">
+              <i class="fas fa-search"></i> Search
+            </button>
+          </div>
+        </div>
+
+        <div class="users-grid" id="usersGrid">
+          <div style="text-align: center; padding: 20px; color: #64748b; width: 100%;">
+            <div class="loading-text">Loading users<span class="loading-dots"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div id="settingsPage" class="page-content">
+        <div class="dashboard-header">
+          <h1 class="dashboard-title">Support Settings</h1>
+          <div class="quick-actions">
+            <button class="btn btn-success" onclick="saveSettings()">
+              <i class="fas fa-save"></i> Save All Settings
+            </button>
+          </div>
+        </div>
+
+        <!-- Email Configuration -->
+        <div class="settings-container">
+          <div class="settings-section">
+            <h3 class="settings-title">
+              <i class="fas fa-envelope"></i> Email Configuration
+              <span id="emailStatus" class="status-indicator status-inactive">Not Configured</span>
+            </h3>
+            
+            <div class="alert-banner info">
+              <i class="fas fa-info-circle"></i> 
+              Sign up at <a href="https://www.emailjs.com" target="_blank">EmailJS.com</a> for free email sending. 
+              Use Gmail or any SMTP service.
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">EmailJS Service ID</label>
+              <input type="text" class="form-input" id="emailServiceId" placeholder="service_xxxxxxxxx">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">EmailJS Template ID</label>
+              <input type="text" class="form-input" id="emailTemplateId" placeholder="template_xxxxxxxxx">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">EmailJS Public Key</label>
+              <input type="text" class="form-input" id="emailPublicKey" placeholder="user_xxxxxxxxxxxxx">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">From Email (Display)</label>
+              <input type="email" class="form-input" id="emailFrom" value="support@evergreenempireltd.com">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Support Team Name</label>
+              <input type="text" class="form-input" id="supportTeamName" value="EverNet Support Team">
+            </div>
+            
+            <button class="btn btn-primary test-email-btn" onclick="testEmailConfiguration()">
+              <i class="fas fa-paper-plane"></i> Test Email Configuration
+            </button>
+          </div>
+          
+          <!-- Work Hours Settings -->
+          <div class="settings-section">
+            <h3 class="settings-title"><i class="fas fa-clock"></i> Work Hours & Auto-Responses</h3>
+            
+            <div class="alert-banner warning">
+              <i class="fas fa-exclamation-circle"></i> 
+              Auto-responses are sent ONLY to creators, not to support agents.
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Support Hours (GMT)</label>
+              <div class="time-inputs">
+                <input type="number" class="form-input" id="workHoursStart" min="0" max="23" value="9" style="width: 100px;">
+                <span>to</span>
+                <input type="number" class="form-input" id="workHoursEnd" min="0" max="23" value="17" style="width: 100px;">
+                <span>Hours (24-hour format, 9-17 means 9am to 5pm GMT)</span>
+              </div>
+              <div style="font-size: 0.85em; color: #64748b; margin-top: 5px;">
+                <i class="fas fa-info-circle"></i> Current GMT: <span id="currentGMTTime">--:--</span>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Weekend Days</label>
+              <div class="checkbox-group">
+                <input type="checkbox" id="weekendSun" checked>
+                <label class="checkbox-label">Sunday</label>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="weekendSat" checked>
+                <label class="checkbox-label">Saturday</label>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">After-Hours Auto-Response (Weekdays outside work hours)</label>
+              <textarea class="form-input form-textarea" id="afterHoursResponse">
+Thank you for reaching out to EverNet Support! Our support team will begin reviewing your message at 9am GMT. In the meantime, feel free to add any additional details to your message.</textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Weekend Auto-Response</label>
+              <textarea class="form-input form-textarea" id="weekendResponse">
+Thank you for reaching out to EverNet Support! Our team is currently offline for the weekend and will be back on Monday at 9am GMT.</textarea>
+            </div>
+            
+            <div class="alert-banner info" style="margin-top: 15px;">
+              <i class="fas fa-clock"></i> 
+              <strong>Current Status:</strong> <span id="currentStatusTest">Checking...</span><br>
+              <small>Based on current GMT time and your settings above</small>
+            </div>
+          </div>
+          
+          <!-- Email Templates -->
+          <div class="settings-section">
+            <h3 class="settings-title"><i class="fas fa-file-alt"></i> Email Template</h3>
+            
+            <div class="form-group">
+              <label class="form-label">Email Subject</label>
+              <input type="text" class="form-input" id="emailSubject" value="Re: Support Ticket #{{ticket_id}} - {{ticket_subject}}">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Email Body Template</label>
+              <textarea class="form-input form-textarea" id="emailBodyTemplate" rows="8">
+Hello {{creator_name}},
+
+{{support_message}}
+
+You can reply to this message by going to: {{reply_link}}
+
+Or reply directly to this email.
+
+Ticket: #{{ticket_id}}
+Status: {{status}}
+
+Best regards,
+{{support_agent}}
+{{support_team}}
+{{support_email}}</textarea>
+              <div class="template-variables">
+                Available variables: 
+                <span class="variable">{{creator_name}}</span>
+                <span class="variable">{{ticket_id}}</span>
+                <span class="variable">{{ticket_subject}}</span>
+                <span class="variable">{{support_message}}</span>
+                <span class="variable">{{support_agent}}</span>
+                <span class="variable">{{support_team}}</span>
+                <span class="variable">{{support_email}}</span>
+                <span class="variable">{{reply_link}}</span>
+                <span class="variable">{{status}}</span>
+                <span class="variable">{{is_auto_response}}</span>
+                <span class="variable">{{to_email}}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="settings-actions">
+            <button class="btn btn-outline" onclick="resetSettings()">
+              <i class="fas fa-undo"></i> Reset to Defaults
+            </button>
+            <button class="btn btn-primary" onclick="saveSettings()">
+              <i class="fas fa-save"></i> Save All Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="support-footer">
+      <div class="footer-content">
+        <div class="footer-left">
+          <div class="footer-copyright">©2025 EverGreen Empire Ltd • Support Portal</div>
+          <a href="mailto:support@evergreenempireltd.com" class="support-email-link">
+            <i class="fas fa-envelope"></i> support@evergreenempireltd.com
+          </a>
+        </div>
+        <div class="quick-actions">
+          <span style="color: var(--light-gold); font-size: 0.85em;">
+            GMT Time: <span id="gmtTime">--:--</span>
+          </span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal" id="newTicketModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Ticket</h3>
+        <button class="close-modal" onclick="closeModal('newTicketModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label class="form-label">Creator Email</label>
+        <input type="email" class="form-input" id="ticketCreatorEmail" placeholder="creator@example.com">
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label class="form-label">Subject</label>
+        <input type="text" class="form-input" id="ticketSubject" placeholder="Brief description of the issue">
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label class="form-label">Priority</label>
+        <select class="form-input" id="ticketPriority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label class="form-label">Message</label>
+        <textarea class="form-input" id="ticketMessage" rows="4" placeholder="Detailed description of the issue..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('newTicketModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="createNewTicket()">
+          <i class="fas fa-plus"></i> Create Ticket
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Upload Modal -->
+  <div class="modal" id="fileUploadModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Upload File</h3>
+        <button class="close-modal" onclick="closeModal('fileUploadModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label class="form-label">Select File (Max 5MB)</label>
+        <input type="file" class="form-input" id="fileInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt">
+        <div style="font-size: 0.85em; color: #64748b; margin-top: 5px;">
+          Supported: PDF, Word, Images, Text files
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('fileUploadModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="uploadFile()">
+          <i class="fas fa-upload"></i> Upload
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Reply Modal -->
+  <div class="modal" id="emailReplyModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Send Email Reply</h3>
+        <button class="close-modal" onclick="closeModal('emailReplyModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label class="form-label">To (Creator's Email)</label>
+        <input type="email" class="form-input" id="emailReplyTo" readonly style="background: #f8fafc; color: #64748b;">
+        <div style="font-size: 0.85em; color: #64748b; margin-top: 5px;">
+          <i class="fas fa-info-circle"></i> Email will always be sent to the ticket creator
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label class="form-label">Subject</label>
+        <input type="text" class="form-input" id="emailReplySubject">
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label class="form-label">Message</label>
+        <textarea class="form-input form-textarea" id="emailReplyMessage" rows="6"></textarea>
+      </div>
+      <div class="alert-banner info">
+        <i class="fas fa-info-circle"></i> 
+        This email will be sent via EmailJS. Make sure EmailJS is configured in Settings.
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('emailReplyModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="sendEmailReplyNow()">
+          <i class="fas fa-paper-plane"></i> Send Email
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Configuration -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuSEqhLenwrEz-qrIn1drjAugy1YSkDlI",
+      authDomain: "creators-portal-428c5.firebaseapp.com",
+      projectId: "creators-portal-428c5",
+      storageBucket: "creators-portal-428c5.firebasestorage.app",
+      messagingSenderId: "499280036303",
+      appId: "1:499280036303:web:b4d80d3b7fe1291381d2ba",
+      measurementId: "G-CYWGD80FS5"
+    };
+
+    // Initialize Firebase
+    let app, auth, db, storage;
+    try {
+      app = firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+      storage = firebase.storage();
+      console.log('Firebase initialized successfully');
+    } catch (error) {
+      console.log('Firebase already initialized, using existing app');
+      app = firebase.app();
+      auth = firebase.auth();
+      db = firebase.firestore();
+      storage = firebase.storage();
+    }
+  </script>
+
+  <!-- Main Application Script -->
+  <script>
+    // ========== GLOBAL VARIABLES ==========
+    let currentUser = null;
+    let currentPage = 'dashboard';
+    let currentTicket = null;
+    let emailJsInitialized = false;
+    let chatUnsubscribe = null;
+    let supportSettings = {
+      emailServiceId: '',
+      emailTemplateId: '',
+      emailPublicKey: '',
+      emailFrom: 'support@evergreenempireltd.com',
+      supportTeamName: 'EverNet Support Team',
+      workHoursStart: 9,
+      workHoursEnd: 17,
+      weekendDays: [0, 6],
+      afterHoursResponse: "Thank you for reaching out to EverNet Support! Our support team will begin reviewing your message at 9am GMT. In the meantime, feel free to add any additional details to your message.",
+      weekendResponse: "Thank you for reaching out to EverNet Support! Our team is currently offline for the weekend and will be back on Monday at 9am GMT.",
+      emailSubject: "Re: Support Ticket #{{ticket_id}} - {{ticket_subject}}",
+      emailBodyTemplate: `Hello {{creator_name}},\n\n{{support_message}}\n\nYou can reply to this message by going to: {{reply_link}}\n\nOr reply directly to this email.\n\nTicket: #{{ticket_id}}\nStatus: {{status}}\n\nBest regards,\n{{support_agent}}\n{{support_team}}\n{{support_email}}`
+    };
+
+    // ========== INITIALIZATION ==========
+    document.addEventListener('DOMContentLoaded', async function() {
+      showLoading();
+      try {
+        await initializeFirestore();
+        await checkAuthState();
+        updateGMTTime();
+        setupEventListeners();
+        setupResponsiveListeners();
+        
+        // Start time update interval
+        setInterval(updateGMTTime, 1000);
+        setInterval(updateOnlineStatusDisplay, 30000); // Update status every 30 seconds
+        
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showNotification('Error initializing portal', 'error');
+      } finally {
+        hideLoading();
+      }
+    });
+
+    // ========== RESPONSIVE DESIGN FUNCTIONS ==========
+    function setupResponsiveListeners() {
+      window.addEventListener('resize', adjustChatHeight);
+      adjustChatHeight();
+      
+      if ('ontouchstart' in window) {
+        document.querySelectorAll('.btn, .nav-link').forEach(element => {
+          element.style.cursor = 'pointer';
+        });
+      }
+    }
+
+    function adjustChatHeight() {
+      const isMobile = window.innerWidth <= 768;
+      const chatContainer = document.querySelector('.ticket-chat-container');
+      if (chatContainer) {
+        const height = isMobile ? 'calc(100vh - 180px)' : 'calc(100vh - 200px)';
+        chatContainer.style.height = height;
+      }
+    }
+
+    // ========== FIXED: TIME CHECK FUNCTIONS ==========
+    function checkWorkHours() {
+      const now = new Date();
+      const gmtHour = now.getUTCHours();
+      const gmtDay = now.getUTCDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      
+      const startHour = parseInt(supportSettings.workHoursStart) || 9;
+      const endHour = parseInt(supportSettings.workHoursEnd) || 17;
+      
+      // Ensure weekendDays is an array
+      const weekendDays = Array.isArray(supportSettings.weekendDays) ? 
+        supportSettings.weekendDays : 
+        (supportSettings.weekendDays || [0, 6]); // Default to Saturday (6) and Sunday (0)
+      
+      const isWeekend = weekendDays.includes(gmtDay);
+      const isWorkHours = gmtHour >= startHour && gmtHour < endHour;
+      
+      // Debug logging
+      console.log('Time Check:', {
+        GMT_Hour: gmtHour,
+        GMT_Day: gmtDay,
+        Start_Hour: startHour,
+        End_Hour: endHour,
+        Is_Weekend: isWeekend,
+        Is_Work_Hours: isWorkHours,
+        Current_GMT: now.toUTCString()
+      });
+      
+      if (isWeekend) {
+        return {
+          online: false,
+          message: `Offline - Weekend (${formatDay(gmtDay)}) - Back Monday 9am GMT`,
+          autoResponse: supportSettings.weekendResponse || "Thank you for reaching out to EverNet Support! Our team is currently offline for the weekend and will be back on Monday at 9am GMT.",
+          isWeekend: true
+        };
+      } else if (!isWorkHours) {
+        // Determine next available time
+        let nextAvailable = "";
+        if (gmtHour < startHour) {
+          nextAvailable = `today at ${startHour}:00 GMT`;
+        } else {
+          // After work hours, check next weekday
+          const nextDay = new Date(now);
+          nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+          let daysToAdd = 1;
+          
+          // Skip weekend days
+          while (weekendDays.includes((gmtDay + daysToAdd) % 7)) {
+            daysToAdd++;
+          }
+          
+          if (daysToAdd === 1) {
+            nextAvailable = `tomorrow at ${startHour}:00 GMT`;
+          } else {
+            nextDay.setUTCDate(now.getUTCDate() + daysToAdd);
+            nextAvailable = `${formatDay(nextDay.getUTCDay())} at ${startHour}:00 GMT`;
+          }
+        }
+        
+        return {
+          online: false,
+          message: `Offline - Outside work hours (Next: ${nextAvailable})`,
+          autoResponse: supportSettings.afterHoursResponse || "Thank you for reaching out to EverNet Support! Our support team will begin reviewing your message at 9am GMT. In the meantime, feel free to add any additional details to your message.",
+          isWeekend: false
+        };
+      } else {
+        // During work hours
+        const hoursLeft = endHour - gmtHour - 1;
+        const minutesLeft = 60 - now.getUTCMinutes();
+        
+        return {
+          online: true,
+          message: `Online - ${startHour}:00 to ${endHour}:00 GMT (Closes in ${hoursLeft}h ${minutesLeft}m)`,
+          autoResponse: null,
+          isWeekend: false
+        };
+      }
+    }
+
+    function formatDay(dayNumber) {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      return days[dayNumber] || 'Unknown';
+    }
+
+    function updateOnlineStatusDisplay() {
+      const status = checkWorkHours();
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const statusContainer = document.getElementById('onlineStatusContainer');
+      
+      if (status.online) {
+        statusDot.className = 'status-dot';
+        statusText.textContent = status.message;
+        statusContainer.style.background = 'rgba(0, 200, 81, 0.1)';
+        statusContainer.style.border = '1px solid rgba(0, 200, 81, 0.2)';
+      } else {
+        statusDot.className = 'status-dot offline';
+        statusText.textContent = status.message;
+        statusContainer.style.background = 'rgba(255, 53, 71, 0.1)';
+        statusContainer.style.border = '1px solid rgba(255, 53, 71, 0.2)';
+      }
+      
+      // Update settings page test display
+      const testDisplay = document.getElementById('currentStatusTest');
+      if (testDisplay) {
+        testDisplay.textContent = status.online ? '✅ Online (Within work hours)' : '⏸️ Offline (Outside work hours)';
+        testDisplay.style.color = status.online ? 'var(--success)' : 'var(--danger)';
+      }
+    }
+
+    function updateGMTTime() {
+      const now = new Date();
+      const gmtString = now.toUTCString();
+      const gmtTimeOnly = now.toUTCString().split(' ')[4];
+      const gmtDate = now.toUTCString().split(' ').slice(0, 4).join(' ');
+      
+      document.getElementById('gmtTime').textContent = `${gmtTimeOnly} GMT`;
+      
+      // Update current GMT in settings
+      const currentGMTElement = document.getElementById('currentGMTTime');
+      if (currentGMTElement) {
+        currentGMTElement.textContent = `${gmtTimeOnly} (${gmtDate})`;
+      }
+      
+      // Update status every minute
+      updateOnlineStatusDisplay();
+    }
+
+    // ========== FIREBASE INITIALIZATION ==========
+    async function initializeFirestore() {
+      try {
+        const settingsRef = db.collection('support_settings').doc('configuration');
+        const settingsDoc = await settingsRef.get();
+        
+        if (settingsDoc.exists) {
+          const savedSettings = settingsDoc.data();
+          Object.assign(supportSettings, savedSettings);
+          loadSettingsToForm();
+        }
+        
+        if (supportSettings.emailPublicKey) {
+          emailjs.init(supportSettings.emailPublicKey);
+          emailJsInitialized = true;
+          updateEmailStatus();
+        }
+        
+      } catch (error) {
+        console.error('Error initializing Firestore:', error);
+      }
+    }
+
+    // ========== AUTHENTICATION ==========
+    async function checkAuthState() {
+      return new Promise((resolve) => {
+        auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            currentUser = user;
+            document.getElementById('userEmailDisplay').textContent = user.email;
+            
+            const hour = new Date().getHours();
+            let greeting = 'Good ';
+            if (hour < 12) greeting += 'morning';
+            else if (hour < 18) greeting += 'afternoon';
+            else greeting += 'evening';
+            
+            const userName = user.email.split('@')[0];
+            document.getElementById('greetingText').textContent = `${greeting}, ${userName}!`;
+            
+            await loadDashboardData();
+            updateOnlineStatusDisplay();
+            startRealtimeUpdates();
+            
+            resolve();
+          } else {
+            window.location.href = 'index.html';
+            resolve();
+          }
+        });
+      });
+    }
+
+    // ========== SETTINGS MANAGEMENT ==========
+    function loadSettingsToForm() {
+      document.getElementById('emailServiceId').value = supportSettings.emailServiceId || '';
+      document.getElementById('emailTemplateId').value = supportSettings.emailTemplateId || '';
+      document.getElementById('emailPublicKey').value = supportSettings.emailPublicKey || '';
+      document.getElementById('emailFrom').value = supportSettings.emailFrom || 'support@evergreenempireltd.com';
+      document.getElementById('supportTeamName').value = supportSettings.supportTeamName || 'EverNet Support Team';
+      document.getElementById('workHoursStart').value = supportSettings.workHoursStart || 9;
+      document.getElementById('workHoursEnd').value = supportSettings.workHoursEnd || 17;
+      
+      // Set weekend checkboxes
+      const weekendDays = Array.isArray(supportSettings.weekendDays) ? supportSettings.weekendDays : [0, 6];
+      document.getElementById('weekendSun').checked = weekendDays.includes(0);
+      document.getElementById('weekendSat').checked = weekendDays.includes(6);
+      
+      document.getElementById('afterHoursResponse').value = supportSettings.afterHoursResponse || '';
+      document.getElementById('weekendResponse').value = supportSettings.weekendResponse || '';
+      document.getElementById('emailSubject').value = supportSettings.emailSubject || '';
+      document.getElementById('emailBodyTemplate').value = supportSettings.emailBodyTemplate || '';
+      
+      updateEmailStatus();
+      updateOnlineStatusDisplay(); // Update immediately after loading settings
+    }
+
+    async function saveSettings() {
+      showLoading();
+      
+      try {
+        supportSettings.emailServiceId = document.getElementById('emailServiceId').value.trim();
+        supportSettings.emailTemplateId = document.getElementById('emailTemplateId').value.trim();
+        supportSettings.emailPublicKey = document.getElementById('emailPublicKey').value.trim();
+        supportSettings.emailFrom = document.getElementById('emailFrom').value.trim();
+        supportSettings.supportTeamName = document.getElementById('supportTeamName').value.trim();
+        supportSettings.workHoursStart = parseInt(document.getElementById('workHoursStart').value) || 9;
+        supportSettings.workHoursEnd = parseInt(document.getElementById('workHoursEnd').value) || 17;
+        
+        // Get weekend days
+        supportSettings.weekendDays = [];
+        if (document.getElementById('weekendSun').checked) supportSettings.weekendDays.push(0);
+        if (document.getElementById('weekendSat').checked) supportSettings.weekendDays.push(6);
+        
+        supportSettings.afterHoursResponse = document.getElementById('afterHoursResponse').value.trim();
+        supportSettings.weekendResponse = document.getElementById('weekendResponse').value.trim();
+        supportSettings.emailSubject = document.getElementById('emailSubject').value.trim();
+        supportSettings.emailBodyTemplate = document.getElementById('emailBodyTemplate').value.trim();
+        
+        const settingsRef = db.collection('support_settings').doc('configuration');
+        
+        await settingsRef.set(supportSettings);
+        
+        if (supportSettings.emailPublicKey) {
+          emailjs.init(supportSettings.emailPublicKey);
+          emailJsInitialized = true;
+          updateEmailStatus();
+        }
+        
+        showNotification('Settings saved successfully!', 'success');
+        updateOnlineStatusDisplay();
+        
+      } catch (error) {
+        console.error('Error saving settings:', error);
+        showNotification('Error saving settings: ' + error.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function resetSettings() {
+      if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        supportSettings = {
+          emailServiceId: '',
+          emailTemplateId: '',
+          emailPublicKey: '',
+          emailFrom: 'support@evergreenempireltd.com',
+          supportTeamName: 'EverNet Support Team',
+          workHoursStart: 9,
+          workHoursEnd: 17,
+          weekendDays: [0, 6],
+          afterHoursResponse: "Thank you for reaching out to EverNet Support! Our support team will begin reviewing your message at 9am GMT. In the meantime, feel free to add any additional details to your message.",
+          weekendResponse: "Thank you for reaching out to EverNet Support! Our team is currently offline for the weekend and will be back on Monday at 9am GMT.",
+          emailSubject: "Re: Support Ticket #{{ticket_id}} - {{ticket_subject}}",
+          emailBodyTemplate: `Hello {{creator_name}},\n\n{{support_message}}\n\nYou can reply to this message by going to: {{reply_link}}\n\nOr reply directly to this email.\n\nTicket: #{{ticket_id}}\nStatus: {{status}}\n\nBest regards,\n{{support_agent}}\n{{support_team}}\n{{support_email}}`
+        };
+        
+        loadSettingsToForm();
+        showNotification('Settings reset to defaults', 'info');
+      }
+    }
+
+    function updateEmailStatus() {
+      const statusElement = document.getElementById('emailStatus');
+      if (supportSettings.emailServiceId && supportSettings.emailTemplateId && supportSettings.emailPublicKey) {
+        statusElement.textContent = 'Configured';
+        statusElement.className = 'status-indicator status-active';
+      } else {
+        statusElement.textContent = 'Not Configured';
+        statusElement.className = 'status-indicator status-inactive';
+      }
+    }
+
+    // ========== EMAIL FUNCTIONS ==========
+    async function testEmailConfiguration() {
+      if (!supportSettings.emailServiceId || !supportSettings.emailTemplateId || !supportSettings.emailPublicKey) {
+        showNotification('Please configure EmailJS credentials first', 'error');
+        return;
+      }
+      
+      showLoading();
+      
+      try {
+        emailjs.init(supportSettings.emailPublicKey);
+        
+        const templateParams = {
+          creator_name: 'Test Creator',
+          ticket_id: 'TEST-123',
+          ticket_subject: 'Test Email Configuration',
+          support_message: 'This is a test email to verify your EmailJS configuration is working correctly.',
+          support_agent: currentUser.email.split('@')[0],
+          support_team: supportSettings.supportTeamName,
+          support_email: supportSettings.emailFrom,
+          reply_link: 'https://creators-portal-428c5.firebaseapp.com/creator-support',
+          status: 'Open',
+          is_auto_response: 'false',
+          to_email: currentUser.email
+        };
+        
+        await emailjs.send(
+          supportSettings.emailServiceId,
+          supportSettings.emailTemplateId,
+          templateParams
+        );
+        
+        showNotification('Test email sent successfully! Check your inbox.', 'success');
+        emailJsInitialized = true;
+        
+      } catch (error) {
+        console.error('EmailJS error:', error);
+        showNotification('Error sending test email: ' + (error.text || error.message), 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ========== FIXED: SEND EMAIL REPLY ==========
+    function sendEmailReply() {
+      if (!currentTicket) {
+        showNotification('No ticket selected', 'error');
+        return;
+      }
+      
+      db.collection('support_tickets').doc(currentTicket).get()
+        .then(ticketDoc => {
+          if (!ticketDoc.exists) {
+            showNotification('Ticket not found', 'error');
+            return;
+          }
+          
+          const ticket = ticketDoc.data();
+          document.getElementById('emailReplyTo').value = ticket.creatorEmail;
+          document.getElementById('emailReplySubject').value = `Re: Support Ticket #${currentTicket.substring(0, 8)} - ${ticket.subject}`;
+          document.getElementById('emailReplyMessage').value = '';
+          
+          openModal('emailReplyModal');
+        })
+        .catch(error => {
+          console.error('Error loading ticket:', error);
+          showNotification('Error loading ticket', 'error');
+        });
+    }
+
+    async function sendEmailReplyNow() {
+      const toEmail = document.getElementById('emailReplyTo').value;
+      const subject = document.getElementById('emailReplySubject').value;
+      const message = document.getElementById('emailReplyMessage').value;
+      
+      if (!toEmail || !subject || !message) {
+        showNotification('Please fill all fields', 'error');
+        return;
+      }
+      
+      if (!emailJsInitialized || !supportSettings.emailPublicKey) {
+        showNotification('EmailJS not configured. Please configure in Settings.', 'error');
+        return;
+      }
+      
+      showLoading();
+      
+      try {
+        const ticketDoc = await db.collection('support_tickets').doc(currentTicket).get();
+        const ticket = ticketDoc.data();
+        
+        const templateParams = {
+          creator_name: ticket.creatorName || ticket.creatorEmail.split('@')[0],
+          ticket_id: currentTicket.substring(0, 8),
+          ticket_subject: ticket.subject,
+          support_message: message,
+          support_agent: currentUser.email.split('@')[0],
+          support_team: supportSettings.supportTeamName,
+          support_email: supportSettings.emailFrom,
+          reply_link: `https://creators-portal-428c5.firebaseapp.com/creator-support.html?ticket=${currentTicket}`,
+          status: ticket.status || 'Open',
+          is_auto_response: 'false',
+          to_email: toEmail
+        };
+        
+        await emailjs.send(
+          supportSettings.emailServiceId,
+          supportSettings.emailTemplateId,
+          templateParams
+        );
+        
+        // Save message to chat
+        const messageData = {
+          ticketId: currentTicket,
+          senderId: currentUser.uid,
+          senderType: 'support',
+          senderEmail: currentUser.email,
+          senderName: currentUser.displayName || currentUser.email.split('@')[0],
+          message: `[Email sent] ${message}`,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          read: true,
+          automated: false,
+          emailSent: true
+        };
+        
+        await db.collection('support_messages').add(messageData);
+        
+        // Update ticket
+        await db.collection('support_tickets').doc(currentTicket).update({
+          lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        closeModal('emailReplyModal');
+        showNotification('Email sent successfully to creator!', 'success');
+        
+        if (currentPage === 'chat') {
+          loadTicketMessages(currentTicket);
+        }
+        
+      } catch (error) {
+        console.error('Error sending email:', error);
+        showNotification('Error sending email: ' + (error.text || error.message), 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ========== CLOSE CHAT ==========
+    async function closeTicketChat() {
+      if (!currentTicket) {
+        showNotification('No ticket selected', 'error');
+        return;
+      }
+      
+      if (!confirm('Are you sure you want to close this chat? This will mark the ticket as closed.')) {
+        return;
+      }
+      
+      showLoading();
+      
+      try {
+        await db.collection('support_tickets').doc(currentTicket).update({
+          status: 'closed',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          closedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          closedBy: currentUser.email
+        });
+        
+        // Add system message
+        const messageData = {
+          ticketId: currentTicket,
+          senderId: 'system',
+          senderType: 'system',
+          senderEmail: supportSettings.emailFrom,
+          senderName: 'System',
+          message: 'Ticket closed by support agent.',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          read: true,
+          automated: true,
+          emailSent: false
+        };
+        
+        await db.collection('support_messages').add(messageData);
+        
+        showNotification('Ticket closed successfully', 'success');
+        
+        document.getElementById('chatInputArea').style.display = 'none';
+        document.getElementById('ticketActions').style.display = 'none';
+        
+        loadTicketMessages(currentTicket);
+        
+      } catch (error) {
+        console.error('Error closing ticket:', error);
+        showNotification('Error closing ticket: ' + error.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function markAsResolved() {
+      if (!currentTicket) {
+        showNotification('No ticket selected', 'error');
+        return;
+      }
+      
+      showLoading();
+      
+      try {
+        await db.collection('support_tickets').doc(currentTicket).update({
+          status: 'resolved',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        const messageData = {
+          ticketId: currentTicket,
+          senderId: 'system',
+          senderType: 'system',
+          senderEmail: supportSettings.emailFrom,
+          senderName: 'System',
+          message: 'Ticket marked as resolved.',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          read: true,
+          automated: true,
+          emailSent: false
+        };
+        
+        await db.collection('support_messages').add(messageData);
+        
+        showNotification('Ticket marked as resolved', 'success');
+        loadTicketMessages(currentTicket);
+        
+      } catch (error) {
+        console.error('Error marking as resolved:', error);
+        showNotification('Error: ' + error.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ========== EMAIL SENDING FUNCTION ==========
+async function sendEmailToCreator(ticketId, creatorEmail, creatorName, ticketSubject, supportMessage, isAutoResponse = false) {
+  if (!emailJsInitialized || !supportSettings.emailPublicKey) {
+    console.warn('EmailJS not configured, cannot send email');
+    return false;
+  }
+  
+  if (!creatorEmail || creatorEmail.trim() === '') {
+    console.error('Cannot send email: creator email is EMPTY for ticket', ticketId);
+    showNotification('Cannot send email: creator email is missing', 'warning');
+    return false;
+  }
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(creatorEmail)) {
+    console.error('Cannot send email: invalid email format', creatorEmail);
+    showNotification('Cannot send email: invalid email format', 'warning');
+    return false;
+  }
+  
+  try {
+    console.log('Attempting to send email to:', creatorEmail);
+    
+    const templateParams = {
+      creator_name: creatorName || creatorEmail.split('@')[0],
+      ticket_id: ticketId.substring(0, 8),
+      ticket_subject: ticketSubject,
+      support_message: supportMessage,
+      support_agent: isAutoResponse ? 'Auto-Response System' : (currentUser.email.split('@')[0]),
+      support_team: supportSettings.supportTeamName,
+      support_email: supportSettings.emailFrom,
+      reply_link: `https://creators-portal-428c5.firebaseapp.com/creator-support.html?ticket=${ticketId}`,
+      status: 'In Progress',
+      is_auto_response: isAutoResponse ? 'true' : 'false',
+      to_email: creatorEmail
+    };
+    
+    const response = await emailjs.send(
+      supportSettings.emailServiceId,
+      supportSettings.emailTemplateId,
+      templateParams
+    );
+    
+    console.log('Email sent successfully:', response);
+    return true;
+    
+  } catch (error) {
+    console.error('Error sending email:', error);
+    showNotification('Email sending failed: ' + (error.text || error.message), 'warning');
+    return false;
+  }
+}
+
+    // ========== AUTOMATED RESPONSE SYSTEM ==========
+    async function addAutomatedResponse(ticketId, autoResponse, isWeekend = false) {
+      try {
+        const ticketDoc = await db.collection('support_tickets').doc(ticketId).get();
+        const ticket = ticketDoc.data();
+        
+        if (!ticket) {
+          console.error('Ticket not found:', ticketId);
+          return;
+        }
+        
+        const emailSent = await sendEmailToCreator(
+          ticketId,
+          ticket.creatorEmail,
+          ticket.creatorName,
+          ticket.subject,
+          autoResponse,
+          true
+        );
+        
+        const automatedMessage = {
+          ticketId: ticketId,
+          senderId: 'system',
+          senderType: 'system',
+          senderEmail: supportSettings.emailFrom,
+          senderName: 'Auto-Response System',
+          message: autoResponse,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          read: false,
+          automated: true,
+          emailSent: emailSent,
+          recipientType: 'creator'
+        };
+        
+        await db.collection('support_messages').add(automatedMessage);
+        
+        await db.collection('support_tickets').doc(ticketId).update({
+          lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        if (currentPage === 'chat' && currentTicket === ticketId) {
+          await loadTicketMessages(ticketId);
+        }
+        
+        console.log('Auto-response sent to creator, email sent:', emailSent);
+        
+      } catch (error) {
+        console.error('Error adding automated response:', error);
+      }
+    }
+
+    // ========== SEND MESSAGE FUNCTION ==========
+    async function sendMessage() {
+      const messageInput = document.getElementById('chatInput');
+      const message = messageInput.value.trim();
+      
+      if (!message || !currentTicket) {
+        showNotification('Please enter a message', 'error');
+        return;
+      }
+      
+      showLoading();
+      
+      try {
+        const ticketDoc = await db.collection('support_tickets').doc(currentTicket).get();
+        if (!ticketDoc.exists) {
+          showNotification('Ticket not found', 'error');
+          return;
+        }
+        
+        const ticket = ticketDoc.data();
+        
+        const workHoursStatus = checkWorkHours();
+        
+        const messageData = {
+          ticketId: currentTicket,
+          senderId: currentUser.uid,
+          senderType: 'support',
+          senderEmail: currentUser.email,
+          senderName: currentUser.displayName || currentUser.email.split('@')[0],
+          message: message,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          read: true,
+          automated: false,
+          emailSent: true
+        };
+        
+        await db.collection('support_messages').add(messageData);
+        
+        await db.collection('support_tickets').doc(currentTicket).update({
+          lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'in-progress',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        messageInput.value = '';
+        
+        const emailSent = await sendEmailToCreator(
+          currentTicket,
+          ticket.creatorEmail,
+          ticket.creatorName,
+          ticket.subject,
+          message,
+          false
+        );
+        
+        if (!workHoursStatus.online) {
+          const isFirstResponse = await checkFirstResponse(currentTicket);
+          if (isFirstResponse) {
+            setTimeout(async () => {
+              await addAutomatedResponse(currentTicket, workHoursStatus.autoResponse, workHoursStatus.isWeekend);
+            }, 1000);
+          }
+        }
+        
+        await loadTicketMessages(currentTicket);
+        
+        setTimeout(() => {
+          const chatMessages = document.getElementById('chatMessages');
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 100);
+        
+        showNotification('Message sent successfully' + (emailSent ? ' (email sent)' : ''), 'success');
+        
+      } catch (error) {
+        console.error('Error sending message:', error);
+        showNotification('Error sending message: ' + error.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function checkFirstResponse(ticketId) {
+      try {
+        const messagesSnapshot = await db.collection('support_messages')
+          .where('ticketId', '==', ticketId)
+          .where('senderType', '==', 'support')
+          .get();
+        
+        return messagesSnapshot.size <= 1;
+      } catch (error) {
+        console.error('Error checking first response:', error);
+        return true;
+      }
+    }
+
+    // ========== DASHBOARD FUNCTIONS ==========
+    async function loadDashboardData() {
+      try {
+        const stats = await calculateDashboardStats();
+        updateDashboardStats(stats);
+        await loadRecentTickets();
+        updateOnlineStatusDisplay();
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
+    }
+
+    async function calculateDashboardStats() {
+      try {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const ticketsSnapshot = await db.collection('support_tickets').get();
+        
+        let openTickets = 0;
+        let ticketsToday = 0;
+        
+        ticketsSnapshot.forEach(doc => {
+          const ticket = doc.data();
+          if (ticket.status === 'open' || ticket.status === 'in-progress') {
+            openTickets++;
+          }
+          if (ticket.createdAt) {
+            const createdDate = ticket.createdAt.toDate();
+            if (createdDate >= todayStart) {
+              ticketsToday++;
+            }
+          }
+        });
+        
+        const messagesSnapshot = await db.collection('support_messages')
+          .where('read', '==', false)
+          .where('senderType', '==', 'creator')
+          .get();
+        
+        let totalResponseTime = 0;
+        let responseCount = 0;
+        
+        for (const doc of ticketsSnapshot.docs) {
+          const ticket = doc.data();
+          if (ticket.createdAt && ticket.firstResponseAt) {
+            const created = ticket.createdAt.toDate();
+            const firstResponse = ticket.firstResponseAt.toDate();
+            const hours = (firstResponse - created) / (1000 * 60 * 60);
+            totalResponseTime += hours;
+            responseCount++;
+          }
+        }
+        
+        const avgResponseTime = responseCount > 0 ? Math.round(totalResponseTime / responseCount) : 0;
+        
+        return {
+          openTickets: openTickets,
+          unreadMessages: messagesSnapshot.size,
+          responseTime: avgResponseTime,
+          ticketsToday: ticketsToday
+        };
+        
+      } catch (error) {
+        console.error('Error calculating stats:', error);
+        return { openTickets: 0, unreadMessages: 0, responseTime: 0, ticketsToday: 0 };
+      }
+    }
+
+    function updateDashboardStats(stats) {
+      document.getElementById('openTickets').textContent = stats.openTickets;
+      document.getElementById('unreadMessages').textContent = stats.unreadMessages;
+      document.getElementById('responseTime').textContent = stats.responseTime + 'h';
+      document.getElementById('ticketsToday').textContent = stats.ticketsToday;
+      
+      const badge = document.getElementById('openTicketsBadge');
+      badge.textContent = stats.openTickets > 0 ? stats.openTickets : '';
+      badge.style.display = stats.openTickets > 0 ? 'inline-block' : 'none';
+    }
+
+    // ========== TICKET MANAGEMENT ==========
+    async function loadRecentTickets() {
+      try {
+        const ticketsSnapshot = await db.collection('support_tickets')
+          .orderBy('lastMessageAt', 'desc')
+          .limit(10)
+          .get();
+        
+        const tableBody = document.getElementById('recentTicketsTable');
+        
+        if (ticketsSnapshot.empty) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 20px; color: #64748b;">
+                <i class="fas fa-inbox" style="font-size: 2em; margin-bottom: 10px; opacity: 0.3;"></i>
+                <p>No tickets found</p>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
+        let html = '';
+        ticketsSnapshot.forEach(doc => {
+          const ticket = doc.data();
+          const ticketId = doc.id;
+          const shortId = ticketId.substring(0, 8);
+          
+          const statusClass = `status-${ticket.status || 'open'}`;
+          const priorityClass = `priority-${ticket.priority || 'medium'}`;
+          
+          const lastUpdate = ticket.lastMessageAt ? 
+            formatTimeAgo(ticket.lastMessageAt.toDate()) : 
+            formatTimeAgo(ticket.createdAt ? ticket.createdAt.toDate() : new Date());
+          
+          html += `
+            <tr>
+              <td><span style="font-family: monospace; font-weight: 600;">#${shortId}</span></td>
+              <td>${ticket.creatorName || ticket.creatorEmail || 'Unknown'}</td>
+              <td>${ticket.subject || 'No subject'}</td>
+              <td><span class="status-badge ${statusClass}">${formatStatus(ticket.status)}</span></td>
+              <td><span class="priority-badge ${priorityClass}">${formatPriority(ticket.priority)}</span></td>
+              <td>${lastUpdate}</td>
+              <td><button class="btn btn-primary btn-small" onclick="openTicket('${ticketId}')">View</button></td>
+            </tr>
+          `;
+        });
+        
+        tableBody.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading recent tickets:', error);
+      }
+    }
+
+    async function loadAllTickets() {
+      try {
+        const ticketsSnapshot = await db.collection('support_tickets')
+          .orderBy('createdAt', 'desc')
+          .get();
+        
+        const tableBody = document.getElementById('allTicketsTable');
+        
+        if (ticketsSnapshot.empty) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 20px; color: #64748b;">
+                No tickets found
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
+        let html = '';
+        ticketsSnapshot.forEach(doc => {
+          const ticket = doc.data();
+          const ticketId = doc.id;
+          const shortId = ticketId.substring(0, 8);
+          
+          const statusClass = `status-${ticket.status || 'open'}`;
+          const priorityClass = `priority-${ticket.priority || 'medium'}`;
+          
+          const createdDate = ticket.createdAt ? 
+            ticket.createdAt.toDate().toLocaleDateString() : 'N/A';
+          
+          const lastUpdate = ticket.lastMessageAt ? 
+            formatTimeAgo(ticket.lastMessageAt.toDate()) : 
+            formatTimeAgo(ticket.createdAt ? ticket.createdAt.toDate() : new Date());
+          
+          html += `
+            <tr>
+              <td><span style="font-family: monospace; font-weight: 600;">#${shortId}</span></td>
+              <td>${ticket.creatorName || ticket.creatorEmail || 'Unknown'}</td>
+              <td>${ticket.subject || 'No subject'}</td>
+              <td><span class="status-badge ${statusClass}">${formatStatus(ticket.status)}</span></td>
+              <td><span class="priority-badge ${priorityClass}">${formatPriority(ticket.priority)}</span></td>
+              <td>${createdDate}</td>
+              <td>${lastUpdate}</td>
+              <td>
+                <button class="btn btn-primary btn-small" onclick="openTicket('${ticketId}')">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        
+        tableBody.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading all tickets:', error);
+      }
+    }
+
+    function openTicket(ticketId) {
+      currentTicket = ticketId;
+      switchPage('chat');
+      loadTicketChat(ticketId);
+    }
+
+    // ========== USER MANAGEMENT ==========
+    async function loadTicketChat(ticketId) {
+      try {
+        const ticketDoc = await db.collection('support_tickets').doc(ticketId).get();
+        
+        if (!ticketDoc.exists) {
+          showNotification('Ticket not found', 'error');
+          return;
+        }
+        
+        const ticket = ticketDoc.data();
+        
+        document.getElementById('chatTicketTitle').textContent = ticket.subject || 'No subject';
+        document.getElementById('chatTicketMeta').innerHTML = `
+          <span><strong>Creator:</strong> ${ticket.creatorName || ticket.creatorEmail}</span>
+          <span><strong>Status:</strong> <span class="status-badge status-${ticket.status || 'open'}">${formatStatus(ticket.status)}</span></span>
+          <span><strong>Priority:</strong> <span class="priority-badge priority-${ticket.priority || 'medium'}">${formatPriority(ticket.priority)}</span></span>
+          <span><strong>Created:</strong> ${ticket.createdAt ? ticket.createdAt.toDate().toLocaleDateString() : 'N/A'}</span>
+        `;
+        
+        const isClosed = ticket.status === 'closed' || ticket.status === 'resolved';
+        document.getElementById('chatInputArea').style.display = isClosed ? 'none' : 'block';
+        document.getElementById('ticketActions').style.display = isClosed ? 'none' : 'flex';
+        
+        await loadTicketMessages(ticketId);
+        setupChatListener(ticketId);
+        
+        setTimeout(() => {
+          const chatMessages = document.getElementById('chatMessages');
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 100);
+        
+      } catch (error) {
+        console.error('Error loading ticket chat:', error);
+        showNotification('Error loading ticket', 'error');
+      }
+    }
+
+    async function loadTicketMessages(ticketId) {
+      try {
+        if (chatUnsubscribe) {
+          chatUnsubscribe();
+        }
+        
+        const messagesRef = db.collection('support_messages')
+          .where('ticketId', '==', ticketId)
+          .orderBy('timestamp', 'asc');
+        
+        const messagesSnapshot = await messagesRef.get();
+        displayMessages(messagesSnapshot);
+        
+        chatUnsubscribe = messagesRef.onSnapshot((snapshot) => {
+          displayMessages(snapshot);
+          setTimeout(() => {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }, 100);
+        });
+        
+      } catch (error) {
+        console.error('Error loading messages:', error);
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.innerHTML = `
+          <div style="text-align: center; padding: 20px; color: #64748b;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Error loading messages</p>
+          </div>
+        `;
+      }
+    }
+
+    function displayMessages(snapshot) {
+      const chatMessages = document.getElementById('chatMessages');
+      
+      if (snapshot.empty) {
+        chatMessages.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #64748b;">
+            <i class="fas fa-comments" style="font-size: 3em; margin-bottom: 15px; opacity: 0.3;"></i>
+            <p>No messages yet. Start the conversation!</p>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '';
+      snapshot.forEach(doc => {
+        const message = doc.data();
+        const time = message.timestamp ? message.timestamp.toDate() : new Date();
+        let messageClass = 'creator';
+        
+        if (message.senderType === 'support') {
+          messageClass = 'support';
+        } else if (message.senderType === 'system') {
+          messageClass = 'system';
+        }
+        
+        html += `
+          <div class="message ${messageClass}">
+            <div class="message-header">
+              <span><strong>${message.senderName || message.senderEmail}</strong> 
+              ${message.automated ? '<span style="font-size:0.7em;opacity:0.7;">(Auto)</span>' : ''}</span>
+              <span>${time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+            <div class="message-content">${message.message || ''}</div>
+            <div class="message-time">${time.toLocaleDateString()} ${time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            ${message.attachments && message.attachments.length > 0 ? `
+              <div class="attachments">
+                ${message.attachments.map(att => `
+                  <a href="${att.url}" target="_blank" class="attachment">
+                    <i class="fas fa-paperclip"></i> ${att.name}
+                  </a>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+      
+      chatMessages.innerHTML = html;
+    }
+
+    function setupChatListener(ticketId) {
+      // Already set up in loadTicketMessages
+    }
+
+    // ========== NEW TICKET CREATION ==========
+    async function createNewTicket() {
+      const creatorEmail = document.getElementById('ticketCreatorEmail').value.trim();
+      const subject = document.getElementById('ticketSubject').value.trim();
+      const priority = document.getElementById('ticketPriority').value;
+      const message = document.getElementById('ticketMessage').value.trim();
+      
+      if (!creatorEmail || !subject || !message) {
+        showNotification('Please fill all required fields', 'error');
+        return;
+      }
+      
+      showLoading();
+      
+      try {
+        let creatorData = {};
+        let creatorId = '';
+        const creatorQuery = await db.collection('users')
+          .where('email', '==', creatorEmail)
+          .limit(1)
+          .get();
+        
+        if (!creatorQuery.empty) {
+          creatorData = creatorQuery.docs[0].data();
+          creatorId = creatorQuery.docs[0].id;
+        }
+        
+        const ticketData = {
+          creatorId: creatorId,
+          creatorEmail: creatorEmail,
+          creatorName: creatorData.youtubeChannelName || creatorData.name || creatorEmail.split('@')[0],
+          subject: subject,
+          description: message,
+          status: 'open',
+          priority: priority,
+          assignedTo: currentUser.email,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+          createdBy: currentUser.email,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        const ticketRef = await db.collection('support_tickets').add(ticketData);
+        
+        await db.collection('support_messages').add({
+          ticketId: ticketRef.id,
+          senderId: currentUser.uid,
+          senderType: 'support',
+          senderEmail: currentUser.email,
+          senderName: currentUser.displayName || currentUser.email.split('@')[0],
+          message: message,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          read: true,
+          automated: false,
+          emailSent: true
+        });
+        
+        const emailSent = await sendEmailToCreator(
+          ticketRef.id,
+          creatorEmail,
+          ticketData.creatorName,
+          subject,
+          message,
+          false
+        );
+        
+        const workHoursStatus = checkWorkHours();
+        if (!workHoursStatus.online) {
+          setTimeout(async () => {
+            await addAutomatedResponse(ticketRef.id, workHoursStatus.autoResponse, workHoursStatus.isWeekend);
+          }, 1000);
+        }
+        
+        closeModal('newTicketModal');
+        
+        document.getElementById('ticketCreatorEmail').value = '';
+        document.getElementById('ticketSubject').value = '';
+        document.getElementById('ticketMessage').value = '';
+        
+        showNotification(`Ticket created successfully${emailSent ? ' (email sent)' : ''}`, 'success');
+        refreshDashboard();
+        
+      } catch (error) {
+        console.error('Error creating ticket:', error);
+        showNotification('Error creating ticket: ' + error.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ========== UTILITY FUNCTIONS ==========
+    function formatStatus(status) {
+      if (!status) return 'Open';
+      return status.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+    }
+
+    function formatPriority(priority) {
+      if (!priority) return 'Medium';
+      return priority.charAt(0).toUpperCase() + priority.slice(1);
+    }
+
+    function formatTimeAgo(date) {
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString();
+    }
+
+    // ========== PAGE MANAGEMENT ==========
+    function switchPage(page) {
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      document.querySelectorAll('.page-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      document.getElementById(page + 'Page').classList.add('active');
+      currentPage = page;
+      
+      switch(page) {
+        case 'dashboard':
+          loadDashboardData();
+          break;
+        case 'tickets':
+          loadAllTickets();
+          break;
+        case 'chat':
+          loadOpenTicketsForChat();
+          break;
+        case 'users':
+          loadAllUsers();
+          break;
+      }
+    }
+
+    async function loadOpenTicketsForChat() {
+      try {
+        const ticketsSnapshot = await db.collection('support_tickets')
+          .where('status', 'in', ['open', 'in-progress'])
+          .orderBy('lastMessageAt', 'desc')
+          .get();
+        
+        const select = document.getElementById('chatTicketSelect');
+        select.innerHTML = '<option value="">Select a ticket...</option>';
+        
+        ticketsSnapshot.forEach(doc => {
+          const ticket = doc.data();
+          const option = document.createElement('option');
+          option.value = doc.id;
+          option.textContent = `#${doc.id.substring(0, 8)} - ${ticket.subject || 'No subject'}`;
+          select.appendChild(option);
+        });
+        
+        if (currentTicket) {
+          select.value = currentTicket;
+          loadTicketChat(currentTicket);
+        }
+        
+      } catch (error) {
+        console.error('Error loading tickets for chat:', error);
+      }
+    }
+
+    function loadSelectedTicket() {
+      const select = document.getElementById('chatTicketSelect');
+      const ticketId = select.value;
+      
+      if (ticketId) {
+        currentTicket = ticketId;
+        loadTicketChat(ticketId);
+      }
+    }
+
+    // ========== MODAL FUNCTIONS ==========
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    function openNewTicketModal() {
+      openModal('newTicketModal');
+    }
+
+    function openFileUpload() {
+      openModal('fileUploadModal');
+    }
+
+    async function uploadFile() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        showNotification('Please select a file', 'error');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        showNotification('File size must be less than 5MB', 'error');
+        return;
+      }
+      
+      showLoading();
+      
+      try {
+        const storageRef = storage.ref();
+        const fileRef = storageRef.child(`support-attachments/${Date.now()}-${file.name}`);
+        
+        await fileRef.put(file);
+        const downloadURL = await fileRef.getDownloadURL();
+        
+        const chatInput = document.getElementById('chatInput');
+        chatInput.value += `\n[Attachment: ${file.name}](${downloadURL})`;
+        
+        closeModal('fileUploadModal');
+        showNotification('File uploaded successfully', 'success');
+        
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        showNotification('Error uploading file', 'error');
+      } finally {
+        hideLoading();
+        fileInput.value = '';
+      }
+    }
+
+    // ========== NOTIFICATION SYSTEM ==========
+    function showNotification(message, type = 'info') {
+      const notification = document.getElementById('notification');
+      notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+      `;
+      notification.className = `notification ${type} show`;
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 5000);
+    }
+
+    function showLoading() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    // ========== EVENT LISTENERS ==========
+    function setupEventListeners() {
+      document.getElementById('chatInput').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+    }
+
+    // ========== MISC FUNCTIONS ==========
+    function refreshDashboard() {
+      loadDashboardData();
+      showNotification('Dashboard refreshed', 'success');
+    }
+
+    function exportTickets() {
+      showNotification('Exporting tickets data...', 'info');
+      setTimeout(() => {
+        showNotification('Export completed successfully', 'success');
+      }, 2000);
+    }
+
+    function searchUsers() {
+      const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+      showNotification(`Searching for: ${searchTerm}`, 'info');
+    }
+
+    function viewUserTickets(userId, email) {
+      showNotification(`Loading tickets for ${email}...`, 'info');
+    }
+
+    function contactUser(email) {
+      if (email) {
+        window.location.href = `mailto:${email}`;
+      } else {
+        showNotification('No email address available', 'error');
+      }
+    }
+
+    async function loadAllUsers() {
+      try {
+        const usersSnapshot = await db.collection('users').get();
+        const usersGrid = document.getElementById('usersGrid');
+        
+        if (usersSnapshot.empty) {
+          usersGrid.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #64748b; width: 100%;">
+              <i class="fas fa-users" style="font-size: 2em; margin-bottom: 10px; opacity: 0.3;"></i>
+              <p>No users found</p>
+            </div>
+          `;
+          return;
+        }
+        
+        let html = '';
+        for (const doc of usersSnapshot.docs) {
+          const user = doc.data();
+          const userId = doc.id;
+          const initials = (user.email || user.name || 'UU').substring(0, 2).toUpperCase();
+          const name = user.name || user.email || 'Unknown User';
+          const email = user.email || 'No email';
+          const role = user.role || 'unknown';
+          const youtubeChannel = user.youtubeChannelName || 'Not set';
+          
+          const ticketsSnapshot = await db.collection('support_tickets')
+            .where('creatorId', '==', userId)
+            .get();
+          
+          const totalTickets = ticketsSnapshot.size;
+          
+          let activeTickets = 0;
+          ticketsSnapshot.forEach(ticketDoc => {
+            const ticket = ticketDoc.data();
+            if (ticket.status === 'open' || ticket.status === 'in-progress') {
+              activeTickets++;
+            }
+          });
+          
+          html += `
+            <div class="user-card">
+              <div class="user-header">
+                <div class="user-avatar">${initials}</div>
+                <div class="user-info-compact">
+                  <h4>${name}</h4>
+                  <p>${email}</p>
+                  <p><small>Role: ${role} | YouTube: ${youtubeChannel}</small></p>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin: 15px 0;">
+                <div style="text-align: center;">
+                  <div style="font-size: 1.2em; font-weight: 700; color: var(--navy);">${totalTickets}</div>
+                  <div style="font-size: 0.75em; color: #64748b;">Total Tickets</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 1.2em; font-weight: 700; color: var(--support);">${activeTickets}</div>
+                  <div style="font-size: 0.75em; color: #64748b;">Active</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 15px;">
+                <button class="btn btn-primary btn-small" onclick="viewUserTickets('${userId}', '${email}')">
+                  <i class="fas fa-ticket-alt"></i> Tickets (${activeTickets})
+                </button>
+                <button class="btn btn-outline btn-small" onclick="contactUser('${email}')">
+                  <i class="fas fa-envelope"></i> Contact
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        
+        usersGrid.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading users:', error);
+        const usersGrid = document.getElementById('usersGrid');
+        usersGrid.innerHTML = `
+          <div style="text-align: center; padding: 20px; color: #dc3545; width: 100%;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Error loading users</p>
+          </div>
+        `;
+      }
+    }
+
+    function startRealtimeUpdates() {
+      db.collection('support_tickets')
+        .orderBy('lastMessageAt', 'desc')
+        .limit(1)
+        .onSnapshot(() => {
+          if (currentPage === 'dashboard') {
+            loadRecentTickets();
+            calculateDashboardStats().then(stats => updateDashboardStats(stats));
+          }
+        });
+    }
+
+    async function logout() {
+      try {
+        await auth.signOut();
+        showNotification('Logged out successfully', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+      } catch (error) {
+        console.error('Logout error:', error);
+        showNotification('Logout failed', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
